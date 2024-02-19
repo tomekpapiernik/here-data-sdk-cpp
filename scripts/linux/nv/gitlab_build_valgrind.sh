@@ -18,6 +18,22 @@
 # License-Filename: LICENSE
 
 
+echo ----------- Testing read-only dir creation start
+
+mkdir /tmp/experiment
+chmod a-w /tmp/experiment
+mkdir /tmp/experiment/first || true
+
+echo ls -lR /tmp/experiment/
+ls -lR /tmp/experiment/ || true
+
+chmod a-x /tmp/experiment
+mkdir /tmp/experiment/second || true
+echo ls -lR /tmp/experiment/
+ls -lR /tmp/experiment/ || true
+
+echo ----------- Testing read-only dir creation done
+
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOLP_SDK_NO_EXCEPTION=ON -DOLP_SDK_BUILD_EXAMPLES=ON -DOLP_SDK_BUILD_DOC=ON -DBUILD_SHARED_LIBS=ON -DOLP_SDK_ENABLE_TESTING=ON ..
 make -j$(nproc)

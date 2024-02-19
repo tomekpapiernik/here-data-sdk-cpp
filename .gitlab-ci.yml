@@ -95,6 +95,8 @@ build_test_nv:
   tags:
   - docker-prod
   script:
+  - whoami
+  - sudo -ll
   - $CI_PROJECT_DIR/scripts/linux/nv/gitlab_build_valgrind.sh
   - $CI_PROJECT_DIR/scripts/linux/nv/gitlab_test_valgrind.sh
   - if $(ls $CI_PROJECT_DIR/reports/*.xml &>/dev/null); then tar -czvf ${CI_JOB_NAME}_test_reports.tar.gz $CI_PROJECT_DIR/reports ; fi;

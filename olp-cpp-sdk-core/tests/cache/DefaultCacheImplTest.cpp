@@ -23,6 +23,7 @@
 #include <gtest/gtest.h>
 
 #include <cache/DefaultCacheImpl.h>
+#include <olp/core/logging/Log.h>
 #include <olp/core/utils/Dir.h>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -1367,20 +1368,29 @@ TEST_P(DefaultCacheImplOpenTest, ReadOnlyDir) {
   const auto setup_dir = [&](const boost::optional<std::string>& cache_path) {
     if (cache_path) {
       if (olp::utils::Dir::Exists(*cache_path)) {
+        ASSERT_TRUE(helpers::MakeDirectoryAndContentReadonly(*cache_path, false));
         ASSERT_TRUE(olp::utils::Dir::Remove(*cache_path));
       }
-      ASSERT_TRUE(olp::utils::Dir::Create(*cache_path));
+      ASSERT_FALSE(olp::utils::Dir::Exists(*cache_path));
+      ASSERT_TRUE(olp::utils::Dir::Create(*cache_path, true));
+      ASSERT_TRUE(olp::utils::Dir::Exists(*cache_path));
+      ASSERT_TRUE(helpers::MakeDirectoryAndContentReadonly(*cache_path, true));
       ASSERT_TRUE(SetRights(*cache_path, true));
+      ASSERT_TRUE(olp::utils::Dir::IsReadOnly(*cache_path));
     }
   };
 
   const auto reset_dir = [&](const boost::optional<std::string>& cache_path) {
     if (cache_path) {
+      ASSERT_TRUE(helpers::MakeDirectoryAndContentReadonly(*cache_path, false));
+      ASSERT_TRUE(SetRights(*cache_path, false));
       ASSERT_TRUE(olp::utils::Dir::Remove(*cache_path));
     }
   };
 
   const OpenTestParameters test_params = GetParam();
+
+  olp::logging::Log::setLevel(olp::logging::Level::Debug);
 
   ASSERT_NO_FATAL_FAILURE(setup_dir(test_params.disk_path_mutable));
   ASSERT_NO_FATAL_FAILURE(setup_dir(test_params.disk_path_protected));
@@ -1390,6 +1400,16 @@ TEST_P(DefaultCacheImplOpenTest, ReadOnlyDir) {
   settings.disk_path_protected = test_params.disk_path_protected;
   settings.openOptions = test_params.open_options;
   DefaultCacheImplHelper cache(settings);
+
+  if(test_params.disk_path_mutable) {
+    EXPECT_TRUE(olp::utils::Dir::Exists(*test_params.disk_path_mutable));
+    EXPECT_TRUE(olp::utils::Dir::IsReadOnly(*test_params.disk_path_mutable));
+  }
+  if(test_params.disk_path_protected) {
+    EXPECT_TRUE(olp::utils::Dir::Exists(*test_params.disk_path_protected));
+    EXPECT_TRUE(olp::utils::Dir::IsReadOnly(*test_params.disk_path_protected));
+  }
+
   EXPECT_EQ(test_params.expected_result, cache.Open());
 
   ASSERT_NO_FATAL_FAILURE(reset_dir(test_params.disk_path_mutable));
